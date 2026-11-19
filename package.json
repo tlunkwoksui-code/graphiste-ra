@@ -10,7 +10,9 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test-photo": "node scripts/test-photo.mjs"
+    "publier": "node scripts/publier.mjs",
+    "test-photo": "node scripts/test-photo.mjs",
+    "test-nav": "node scripts/test-navigateur.mjs"
   },
   "devDependencies": {
     "puppeteer-core": "^25.18.1"

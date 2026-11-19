@@ -37,7 +37,7 @@ const [vw, vh] = (process.env.VUE || "412x800").split("x").map(Number);
 await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 1 });
 page.on("console", (m) => { if (m.type() === "error") console.log("  [console]", m.text().slice(0, 200)); });
 page.on("pageerror", (e) => console.log("  [erreur page]", String(e).slice(0, 300)));
-await page.goto(`http://localhost:${port}/`, { waitUntil: "networkidle0" });
+await page.goto(process.argv[3] || `http://localhost:${port}/`, { waitUntil: "networkidle0" });
 await page.screenshot({ path: path.join(OUT, "1-accueil.png") });
 await page.click("#demarrer");
 const t0 = Date.now(); let found = false;
