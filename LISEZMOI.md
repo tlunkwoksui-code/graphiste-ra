@@ -41,3 +41,9 @@ Le suivi de l'affiche ne fournit une nouvelle position que 10 à 20 fois par sec
 - `tauMin` (0,03 s) : lissage pendant un grand mouvement ; plus petit = la vidéo suit sans traîner.
 - `filterMinCF`, `filterBeta`, `missTolerance` : filtre interne de MindAR.
 Pour essayer sans rien publier, ajouter à l'adresse, par exemple : `?tauMax=0.25&tauMin=0.05` ; `?debug=1` affiche le nombre d'images par seconde et de mises à jour du suivi.
+
+## Versions du suivi (historique)
+- **v1** : première version, saccadée (tag git `v1`).
+- **v2** : lissage de la pose à chaque image — mieux. Reste accessible à `/v2/` (https://tlunkwoksui-code.github.io/graphiste-ra/v2/).
+- **v3** (adresse principale) : v2 + zone morte (l'affiche immobile ne tremble plus), prédiction du mouvement entre deux mises à jour du suivi, lissage ajusté (`tauMin` 0,06 ; `tauMax` 0,14 ; `prediction` 0,8 ; `zoneMorte` 0,003 ; `predMax` 0,09).
+Retour à v2 : ouvrir l'adresse `/v2/`, ou republier en remplaçant `src/app.js` par `versions/v2/app.js`.

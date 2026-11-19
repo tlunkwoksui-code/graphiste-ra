@@ -36,7 +36,7 @@ function messageCamera(e) {
 async function charger() {
   try {
     cfg = await (await fetch("ra.json", { cache: "no-cache" })).json();
-    SUIVI = { filterMinCF: 0.004, filterBeta: 1500, missTolerance: 20, warmupTolerance: 3, lissage: true, tauMin: 0.03, tauMax: 0.16, distRef: 0.12, angleRef: 0.15, ...(cfg.suivi || {}) };
+    SUIVI = { filterMinCF: 0.004, filterBeta: 1500, missTolerance: 20, warmupTolerance: 3, lissage: true, tauMin: 0.06, tauMax: 0.14, distRef: 0.12, angleRef: 0.15, zoneMorte: 0.003, prediction: 0.8, predMax: 0.09, ...(cfg.suivi || {}) };
     for (const k of Object.keys(SUIVI)) if (q.has(k)) SUIVI[k] = q.get(k) === "false" ? false : q.get(k) === "true" ? true : parseFloat(q.get(k));
     document.title = cfg.titre; $("#titre").textContent = cfg.titre; $("#consigne").textContent = cfg.consigne;
   } catch { $("#etat").textContent = "Configuration introuvable."; $("#demarrer").disabled = true; }
@@ -87,25 +87,54 @@ function majBarre() {
   $("#mute").textContent = video.muted || video.volume === 0 ? "🔇" : "🔊";
 }
 
-// ---------- lissage de la pose, à chaque image affichée (60 Hz) ----------
-// Le suivi MindAR ne fournit une nouvelle pose que ~10-20 fois par seconde : sans lissage la vidéo « saute » de pose en pose.
-// Ici : lissage exponentiel dont la durée s'adapte au mouvement (comme un filtre « 1 euro »).
-//  - affiche immobile : forte constante de temps (tauMax) -> les tremblements du suivi sont absorbés ;
-//  - gros mouvement : faible constante de temps (tauMin) -> la vidéo suit sans traîner.
+// ---------- v3 : stabilisation + prédiction + lissage de la pose, à chaque image affichée (60 Hz) ----------
+// Le suivi MindAR ne fournit une nouvelle pose que ~10-20 fois par seconde. Trois étages :
+//  1. zone morte : une micro-variation de la pose (tremblement du suivi) est ignorée -> affiche immobile = vidéo immobile ;
+//  2. prédiction : entre deux mises à jour, on prolonge le mouvement à la vitesse mesurée (plafonnée) -> plus de « marches d'escalier » ni de retard ;
+//  3. lissage exponentiel adaptatif (fort au repos, léger en mouvement) pour gommer le reste.
+const etat = { ok: false, pos: new THREE.Vector3(), quat: new THREE.Quaternion(), t: 0, vel: new THREE.Vector3(), omega: new THREE.Vector3() };
+const _dq = new THREE.Quaternion(), _axe = new THREE.Vector3(), _pred = new THREE.Vector3(), _qp = new THREE.Quaternion();
 function lisser(dt) {
-  if (!cible || !cible.visible) { if (root) root.visible = false; premier = true; return; }
+  if (!cible || !cible.visible) { if (root) root.visible = false; premier = true; etat.ok = false; return; }
+  const now = performance.now() / 1000;
   cible.matrix.decompose(brute.p, brute.q, brute.s);
-  const cle = cible.matrix.elements[12].toFixed(5) + cible.matrix.elements[13].toFixed(5) + cible.matrix.elements[14].toFixed(5);
-  if (debugOn && cle !== dbg.derniere) { dbg.derniere = cle; dbg.maj++; }
-  if (premier || !SUIVI.lissage) { lissee.p.copy(brute.p); lissee.q.copy(brute.q); lissee.s.copy(brute.s); premier = false; }
+  const w = brute.s.x || 1;
+  const cle = cible.matrix.elements[12].toFixed(5) + cible.matrix.elements[13].toFixed(5) + cible.matrix.elements[14].toFixed(5) + cible.matrix.elements[0].toFixed(5);
+  if (cle !== dbg.derniere) {
+    dbg.derniere = cle; dbg.maj++;
+    if (!etat.ok) { etat.pos.copy(brute.p); etat.quat.copy(brute.q); etat.t = now; etat.vel.set(0, 0, 0); etat.omega.set(0, 0, 0); etat.ok = true; }
+    else {
+      const du = Math.max(now - etat.t, 1e-3);
+      const dp = brute.p.distanceTo(etat.pos) / w, da = brute.q.angleTo(etat.quat);
+      if (SUIVI.zoneMorte && dp < SUIVI.zoneMorte && da < SUIVI.zoneMorte * 4) {
+        etat.vel.multiplyScalar(0.5); etat.omega.multiplyScalar(0.5);            // 1. micro-variation : on garde la pose précédente
+        etat.t = now;
+      } else {
+        const vNouv = brute.p.clone().sub(etat.pos).divideScalar(du);
+        _dq.copy(brute.q).multiply(etat.quat.clone().invert()); if (_dq.w < 0) { _dq.x *= -1; _dq.y *= -1; _dq.z *= -1; _dq.w *= -1; }
+        const ang = 2 * Math.acos(Math.min(1, _dq.w)), sn = Math.sqrt(Math.max(1 - _dq.w * _dq.w, 0));
+        _axe.set(sn > 1e-4 ? _dq.x / sn : 0, sn > 1e-4 ? _dq.y / sn : 0, sn > 1e-4 ? _dq.z / sn : 0);
+        const oNouv = _axe.multiplyScalar(ang / du);
+        etat.vel.lerp(vNouv, 0.6); etat.omega.lerp(oNouv, 0.6);
+        etat.pos.copy(brute.p); etat.quat.copy(brute.q); etat.t = now;
+      }
+    }
+  }
+  // 2. prédiction (âge de la dernière pose, plafonné ; la vitesse s'éteint si le suivi n'a plus rien de neuf)
+  const age = Math.min(now - etat.t, SUIVI.predMax);
+  const amort = Math.max(0, 1 - Math.max(0, now - etat.t - SUIVI.predMax) / 0.25);
+  _pred.copy(etat.pos).addScaledVector(etat.vel, age * amort * SUIVI.prediction);
+  _qp.copy(etat.quat); const om = etat.omega.length();
+  if (om > 1e-5 && SUIVI.prediction) { _axe.copy(etat.omega).normalize(); _dq.setFromAxisAngle(_axe, om * age * amort * SUIVI.prediction); _qp.premultiply(_dq); }
+  if (premier || !SUIVI.lissage) { lissee.p.copy(_pred); lissee.q.copy(_qp); lissee.s.copy(brute.s); premier = false; }
   else {
-    const d = brute.p.distanceTo(lissee.p) / (brute.s.x || 1), a = brute.q.angleTo(lissee.q);   // distance en « largeurs d'affiche »
+    const d = _pred.distanceTo(lissee.p) / w, a = _qp.angleTo(lissee.q);
     const k = Math.min(1, Math.max(d / SUIVI.distRef, a / SUIVI.angleRef));
     const tau = SUIVI.tauMax + (SUIVI.tauMin - SUIVI.tauMax) * k, f = 1 - Math.exp(-dt / tau);
-    lissee.p.lerp(brute.p, f); lissee.q.slerp(brute.q, f); lissee.s.lerp(brute.s, f);
+    lissee.p.lerp(_pred, f); lissee.q.slerp(_qp, f); lissee.s.lerp(brute.s, f);
   }
   root.position.copy(lissee.p); root.quaternion.copy(lissee.q); root.scale.copy(lissee.s); root.visible = cur >= 0;
-  if (debugOn) { const w = brute.s.x || 1; dbg.log.push([performance.now(), brute.p.x / w, brute.p.y / w, brute.p.z / w, lissee.p.x / w, lissee.p.y / w, lissee.p.z / w]); }
+  if (debugOn) dbg.log.push([performance.now(), brute.p.x / w, brute.p.y / w, brute.p.z / w, lissee.p.x / w, lissee.p.y / w, lissee.p.z / w]);
 }
 if (debugOn) {
   window.__dbg = dbg;

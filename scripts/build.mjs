@@ -161,6 +161,7 @@ while (aFaire.length) {
   for (const m of fs.readFileSync(f, "utf8").matchAll(/"\.\/([A-Za-z0-9_.-]+\.js)"/g)) aFaire.push(m[1]);
 }
 if (fs.existsSync(SRC)) fs.cpSync(SRC, DOCS, { recursive: true });
+if (fs.existsSync(P("versions"))) fs.cpSync(P("versions"), DOCS, { recursive: true });   // versions figées : docs/v2/ ...
 fs.writeFileSync(path.join(DOCS, ".nojekyll"), "");
 
 // ---------- 6. rapport ----------
