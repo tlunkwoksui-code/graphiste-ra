@@ -1,0 +1,28 @@
+{
+  "titre": "Graphiste & RA",
+  "consigne": "Visez une affiche",
+  "paires": [
+    {
+      "id": "affiche-01",
+      "titre": "Fumer tue",
+      "video": "videos/affiche-01.mp4",
+      "vignette": "img/affiche-01.jpg",
+      "ratioImage": 1.6,
+      "ratioVideo": 1.6,
+      "boucle": false,
+      "quandAffichePerdue": "continuer",
+      "calage": "ajuster"
+    },
+    {
+      "id": "affiche-02",
+      "titre": "Salon de la maison",
+      "video": "videos/affiche-02.mp4",
+      "vignette": "img/affiche-02.jpg",
+      "ratioImage": 1.6,
+      "ratioVideo": 1.7778,
+      "boucle": false,
+      "quandAffichePerdue": "continuer",
+      "calage": "ajuster"
+    }
+  ]
+}

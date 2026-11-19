@@ -1,0 +1,99 @@
+{
+  "titre": "Graphiste & RA",
+  "consigne": "Visez une affiche",
+  "reglagesParDefaut": {
+    "boucle": false,
+    "quandAffichePerdue": "continuer",
+    "calage": "ajuster",
+    "zonesIgnorees": [
+      [
+        0.88,
+        0,
+        0.12,
+        0.26
+      ],
+      [
+        0.5,
+        0.84,
+        0.46,
+        0.15
+      ],
+      [
+        0.5,
+        0.3,
+        0.46,
+        0.09
+      ],
+      [
+        0.5,
+        0.5,
+        0.46,
+        0.1
+      ],
+      [
+        0,
+        0,
+        1,
+        0.025
+      ],
+      [
+        0,
+        0.975,
+        1,
+        0.025
+      ],
+      [
+        0,
+        0,
+        0.012,
+        1
+      ],
+      [
+        0.988,
+        0,
+        0.012,
+        1
+      ]
+    ]
+  },
+  "paires": [
+    {
+      "id": "affiche-01",
+      "image": "affiche-01.png",
+      "video": "affiche-01.mp4",
+      "titre": "Fumer tue"
+    },
+    {
+      "id": "affiche-02",
+      "image": "affiche-02.png",
+      "video": "affiche-02.mp4",
+      "titre": "Salon de la maison",
+      "zonesIgnorees": [
+        [
+          0,
+          0,
+          1,
+          0.025
+        ],
+        [
+          0,
+          0.975,
+          1,
+          0.025
+        ],
+        [
+          0,
+          0,
+          0.012,
+          1
+        ],
+        [
+          0.988,
+          0,
+          0.012,
+          1
+        ]
+      ]
+    }
+  ]
+}

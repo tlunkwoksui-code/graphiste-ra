@@ -1,0 +1,9 @@
+# Sources personnelles : jamais publiées
+contenus/
+_compo/
+node_modules/
+.cache/
+*.psd
+build.log
+prompt.txt
+*.log
