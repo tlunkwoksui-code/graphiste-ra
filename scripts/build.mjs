@@ -141,7 +141,7 @@ if (fs.existsSync(mindOut) && fs.existsSync(mindStamp) && fs.readFileSync(mindSt
 
 // ---------- 5. manifeste pour la page + copie du site ----------
 const manifest = {
-  titre: cfg.titre || "Graphiste & RA", consigne: cfg.consigne || "Visez une affiche",
+  titre: cfg.titre || "Graphiste & RA", suivi: cfg.suivi || {}, consigne: cfg.consigne || "Visez une affiche",
   paires: items.map((it) => ({
     id: it.p.id, titre: it.p.titre || it.p.id, video: `videos/${it.p.id}.mp4`, vignette: `img/${it.p.id}.jpg`,
     ratioImage: +it.rImg.toFixed(4), ratioVideo: +it.rVid.toFixed(4),

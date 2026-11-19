@@ -11,6 +11,13 @@ let cfg, mindar, anchors = [], root, videoMesh, fond, texture;
 let cur = -1;            // index de l'affiche dont la vidéo est chargée
 let suivie = false;      // l'affiche courante est-elle actuellement visible par la caméra ?
 let pauseUtilisateur = false;
+let SUIVI = {};          // réglages de suivi (ra.config.json « suivi », modifiables par l'URL pour les essais)
+let cible = null;        // groupe MindAR de l'affiche courante (pose brute du suivi)
+let premier = true;      // true = recaler la vidéo d'un coup (début de suivi), sans la faire glisser
+let dernier = 0;
+const lissee = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
+const brute = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
+const debugOn = q.has("debug"); const dbg = { frames: 0, maj: 0, t0: performance.now(), derniere: "", log: [] };
 const geom = new THREE.PlaneGeometry(1, 1);
 
 function afficherErreur(msg) {
@@ -29,6 +36,8 @@ function messageCamera(e) {
 async function charger() {
   try {
     cfg = await (await fetch("ra.json", { cache: "no-cache" })).json();
+    SUIVI = { filterMinCF: 0.004, filterBeta: 1500, missTolerance: 20, warmupTolerance: 3, lissage: true, tauMin: 0.03, tauMax: 0.16, distRef: 0.12, angleRef: 0.15, ...(cfg.suivi || {}) };
+    for (const k of Object.keys(SUIVI)) if (q.has(k)) SUIVI[k] = q.get(k) === "false" ? false : q.get(k) === "true" ? true : parseFloat(q.get(k));
     document.title = cfg.titre; $("#titre").textContent = cfg.titre; $("#consigne").textContent = cfg.consigne;
   } catch { $("#etat").textContent = "Configuration introuvable."; $("#demarrer").disabled = true; }
 }
@@ -51,14 +60,13 @@ function allerA(i) {
   const p = cfg.paires[i];
   const nouvelle = cur !== i;
   cur = i;
-  anchors[i].group.add(root);
+  cible = anchors[i].group;
   if (nouvelle) {
-    pauseUtilisateur = false;
+    premier = true; pauseUtilisateur = false;
     video.src = p.video; video.loop = !!p.boucle; video.poster = p.vignette; video.load();
     caler(p);
     $("#chip").textContent = p.titre; $("#chip").hidden = false; $("#barre").hidden = false; $("#rejouer").hidden = true;
   }
-  root.visible = true;
   lire();
 }
 
@@ -79,6 +87,33 @@ function majBarre() {
   $("#mute").textContent = video.muted || video.volume === 0 ? "🔇" : "🔊";
 }
 
+// ---------- lissage de la pose, à chaque image affichée (60 Hz) ----------
+// Le suivi MindAR ne fournit une nouvelle pose que ~10-20 fois par seconde : sans lissage la vidéo « saute » de pose en pose.
+// Ici : lissage exponentiel dont la durée s'adapte au mouvement (comme un filtre « 1 euro »).
+//  - affiche immobile : forte constante de temps (tauMax) -> les tremblements du suivi sont absorbés ;
+//  - gros mouvement : faible constante de temps (tauMin) -> la vidéo suit sans traîner.
+function lisser(dt) {
+  if (!cible || !cible.visible) { if (root) root.visible = false; premier = true; return; }
+  cible.matrix.decompose(brute.p, brute.q, brute.s);
+  const cle = cible.matrix.elements[12].toFixed(5) + cible.matrix.elements[13].toFixed(5) + cible.matrix.elements[14].toFixed(5);
+  if (debugOn && cle !== dbg.derniere) { dbg.derniere = cle; dbg.maj++; }
+  if (premier || !SUIVI.lissage) { lissee.p.copy(brute.p); lissee.q.copy(brute.q); lissee.s.copy(brute.s); premier = false; }
+  else {
+    const d = brute.p.distanceTo(lissee.p) / (brute.s.x || 1), a = brute.q.angleTo(lissee.q);   // distance en « largeurs d'affiche »
+    const k = Math.min(1, Math.max(d / SUIVI.distRef, a / SUIVI.angleRef));
+    const tau = SUIVI.tauMax + (SUIVI.tauMin - SUIVI.tauMax) * k, f = 1 - Math.exp(-dt / tau);
+    lissee.p.lerp(brute.p, f); lissee.q.slerp(brute.q, f); lissee.s.lerp(brute.s, f);
+  }
+  root.position.copy(lissee.p); root.quaternion.copy(lissee.q); root.scale.copy(lissee.s); root.visible = cur >= 0;
+  if (debugOn) { const w = brute.s.x || 1; dbg.log.push([performance.now(), brute.p.x / w, brute.p.y / w, brute.p.z / w, lissee.p.x / w, lissee.p.y / w, lissee.p.z / w]); }
+}
+if (debugOn) {
+  window.__dbg = dbg;
+  const el = Object.assign(document.createElement("div"), { style: "position:fixed;top:60px;left:8px;z-index:50;background:#000a;color:#0f0;font:12px monospace;padding:4px 8px;border-radius:6px" });
+  document.body.appendChild(el);
+  setInterval(() => { const s = (performance.now() - dbg.t0) / 1000; el.textContent = `affichage ${(dbg.frames / s).toFixed(0)} i/s · suivi ${(dbg.maj / s).toFixed(1)} maj/s`; dbg.frames = 0; dbg.maj = 0; dbg.t0 = performance.now(); }, 1000);
+}
+
 // ---------- démarrage ----------
 async function demarrer() {
   $("#demarrer").disabled = true; $("#etat").textContent = "Démarrage de la caméra…";
@@ -89,8 +124,8 @@ async function demarrer() {
     mindar = new MindARThree({
       container: $("#ar"), imageTargetSrc: "targets.mind", maxTrack: 1,
       uiLoading: "no", uiScanning: "no", uiError: "no",
-      filterMinCF: parseFloat(q.get("cf") || "0.0008"), filterBeta: parseFloat(q.get("beta") || "600"),
-      warmupTolerance: 4, missTolerance: parseInt(q.get("miss") || "12", 10),
+      filterMinCF: SUIVI.filterMinCF, filterBeta: SUIVI.filterBeta,
+      warmupTolerance: SUIVI.warmupTolerance, missTolerance: SUIVI.missTolerance,
     });
     const { renderer, scene, camera } = mindar;
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -98,24 +133,28 @@ async function demarrer() {
     videoMesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
     fond = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0x000000 }));
     videoMesh.position.z = 0.002; fond.position.z = 0.001;
-    root = new THREE.Group(); root.add(fond); root.add(videoMesh); root.visible = false;
+    root = new THREE.Group(); root.add(fond); root.add(videoMesh); root.visible = false; root.matrixAutoUpdate = true; scene.add(root);
 
     cfg.paires.forEach((p, i) => {
       const a = mindar.addAnchor(i); anchors.push(a);
       a.onTargetFound = () => {
-        if (i === cur) { suivie = true; root.visible = true; if (p.quandAffichePerdue === "pause") lire(); }
+        if (i === cur) { suivie = true; if (p.quandAffichePerdue === "pause") lire(); }
         else { suivie = true; allerA(i); }
         $("#scan").hidden = true;
       };
       a.onTargetLost = () => {
         if (i !== cur) return;
-        suivie = false; root.visible = false;
+        suivie = false;
         if (p.quandAffichePerdue === "pause") video.pause();
         $("#scan").hidden = false;
       };
     });
     await mindar.start();
-    renderer.setAnimationLoop(() => renderer.render(scene, camera));
+    dernier = performance.now();
+    renderer.setAnimationLoop(() => {
+      const maintenant = performance.now(), dt = Math.min((maintenant - dernier) / 1000, 0.1); dernier = maintenant;
+      lisser(dt); renderer.render(scene, camera); dbg.frames++;
+    });
     $("#accueil").hidden = true; $("#scan").hidden = false;
   } catch (e) {
     console.error(e);

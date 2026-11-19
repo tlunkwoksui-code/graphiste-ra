@@ -33,3 +33,11 @@ Chaque paire peut reprendre ces réglages pour elle seule.
 ## Tester sans téléphone
 - `npm run test-photo -- contenus/photos-test/photo.jpg` : teste la reconnaissance d'une photo (hors navigateur).
 - `npm run test-nav -- contenus/photos-test/fake-xxx.mjpeg` : ouvre la page dans Chrome avec une caméra simulée.
+
+## Réglage de la fluidité de la vidéo (section « suivi » de ra.config.json)
+Le suivi de l'affiche ne fournit une nouvelle position que 10 à 20 fois par seconde ; la page lisse donc le mouvement à chaque image affichée.
+- `lissage` : `true` / `false`.
+- `tauMax` (0,16 s) : lissage quand l'affiche est immobile ; plus grand = moins de tremblements, un peu plus de retard.
+- `tauMin` (0,03 s) : lissage pendant un grand mouvement ; plus petit = la vidéo suit sans traîner.
+- `filterMinCF`, `filterBeta`, `missTolerance` : filtre interne de MindAR.
+Pour essayer sans rien publier, ajouter à l'adresse, par exemple : `?tauMax=0.25&tauMin=0.05` ; `?debug=1` affiche le nombre d'images par seconde et de mises à jour du suivi.

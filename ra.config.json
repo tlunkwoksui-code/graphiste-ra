@@ -95,5 +95,16 @@
         ]
       ]
     }
-  ]
+  ],
+  "suivi": {
+    "filterMinCF": 0.004,
+    "filterBeta": 1500,
+    "missTolerance": 20,
+    "warmupTolerance": 3,
+    "lissage": true,
+    "tauMin": 0.03,
+    "tauMax": 0.16,
+    "distRef": 0.12,
+    "angleRef": 0.15
+  }
 }
