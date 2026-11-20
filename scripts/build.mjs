@@ -188,7 +188,24 @@ while (aFaire.length) {
 // code commun (à la racine du site) + page propre à l'occurrence
 for (const f of ["app.js", "style.css"]) fs.copyFileSync(path.join(SRC, f), path.join(DOCS, f));
 ecrireHtml("occurrence.html", path.join(OUT, "index.html")); ecrireHtml("racine.html", path.join(DOCS, "index.html"));
-fs.writeFileSync(path.join(OUT, "manifest.webmanifest"), JSON.stringify({ name: cfg.titre || SITE, short_name: (cfg.titre || SITE).slice(0, 12), start_url: ".", display: "fullscreen", orientation: "portrait", background_color: "#0e1116", theme_color: "#0e1116" }, null, 2));
+// application installable (PWA) : icônes (créées depuis occurrences/<nom>/icone.png), manifeste, mini service worker
+const icone = path.join(OCC, SITE, "icone.png");
+const icones = [];
+if (fs.existsSync(icone)) {
+  for (const [nom, t] of [["icon-32.png", 32], ["icon-180.png", 180], ["icon-192.png", 192], ["icon-512.png", 512]]) {
+    execFileSync(FFMPEG, ["-y", "-loglevel", "error", "-i", icone, "-vf", `scale=${t}:${t}:flags=lanczos`, path.join(OUT, nom)]);
+  }
+  icones.push({ src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" }, { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" }, { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" });
+} else log(`  ⚠ pas d'icône pour « ${SITE} » : lancez « npm run icones » (ou déposez occurrences/${SITE}/icone.png).`);
+fs.writeFileSync(path.join(OUT, "manifest.webmanifest"), JSON.stringify({
+  id: "./", name: cfg.titre || SITE, short_name: cfg.nomCourt || cfg.titre || SITE, description: cfg.consigne || "", start_url: "./", scope: "./",
+  display: "standalone", background_color: "#0e1116", theme_color: "#0e1116", icons: icones,
+}, null, 2));
+fs.writeFileSync(path.join(OUT, "sw.js"), `// service worker minimal : rend le site installable ; tout passe par le réseau (jamais de vieille version en cache)
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("fetch", () => {});
+`);
 fs.writeFileSync(path.join(DOCS, ".nojekyll"), "");
 
 // ---------- 6. rapport ----------

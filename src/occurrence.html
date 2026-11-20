@@ -7,6 +7,8 @@
   <title>{{TITRE}}</title>
   <link rel="stylesheet" href="../style.css?v={{V}}">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+  <link rel="apple-touch-icon" href="icon-180.png">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script type="importmap">
@@ -29,8 +31,10 @@
       <h1 id="titre">{{TITRE}}</h1>
       <p id="consigne">Visez une affiche</p>
       <button id="demarrer" class="grand" type="button">Démarrer la caméra</button>
+      <button id="installer" class="secondaire" type="button" hidden>📲 Installer l'application</button>
+      <p id="astuceIos" class="petit" hidden>Pour l'installer : touchez Partager <b>⎙</b> puis « Sur l'écran d'accueil ».</p>
       <button id="quitterAccueil" class="secondaire" type="button">✕ Quitter</button>
-      <p id="etat" class="petit">version v9</p>
+      <p id="etat" class="petit">version v10</p>
     </div>
   </section>
 
