@@ -125,6 +125,12 @@
       "image": "rechPE.png",
       "video": "rechPE.mp4",
       "titre": "Recherche PE"
+    },
+    {
+      "id": "logoLAVALI",
+      "image": "logoLAVALI.png",
+      "video": "logoLAVALI.mp4",
+      "titre": "Logo Lavali"
     }
   ],
   "suivi": {

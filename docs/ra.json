@@ -93,6 +93,17 @@
       "boucle": false,
       "quandAffichePerdue": "pause",
       "calage": "ajuster"
+    },
+    {
+      "id": "logoLAVALI",
+      "titre": "Logo Lavali",
+      "video": "videos/logoLAVALI.mp4",
+      "vignette": "img/logoLAVALI.jpg",
+      "ratioImage": 1.7778,
+      "ratioVideo": 1.7778,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
     }
   ]
 }
