@@ -4,7 +4,8 @@
 import * as THREE from "three";
 import { MindARThree } from "mindar-image-three";
 
-const $ = (s) => document.querySelector(s);
+// si un élément manque (page et code de versions différentes), on ne plante pas : un faux élément absorbe les réglages
+const $ = (s) => document.querySelector(s) || { style: {}, classList: { add() {}, remove() {}, contains: () => false } };
 const q = new URLSearchParams(location.search);
 const video = $("#v");
 let cfg, mindar, anchors = [], root, videoMesh, fond, texture;
@@ -268,5 +269,13 @@ $("#retour").onclick = () => {
 };
 $("#quitter").onclick = quitter;
 $("#demarrer").onclick = demarrer;
+// « Quitter » de l'accueil : ferme l'onglet si le navigateur l'autorise, sinon revient en arrière, sinon affiche un au revoir
+$("#quitterAccueil").onclick = () => {
+  try { window.close(); } catch { /* refusé */ }
+  setTimeout(() => {
+    if (history.length > 1) history.back();
+    else document.body.innerHTML = '<main style="min-height:100%;display:grid;place-items:center;text-align:center;padding:24px;font-size:20px">À bientôt !<br>Vous pouvez fermer cet onglet.</main>';
+  }, 250);
+};
 $("#reessayer").onclick = () => location.reload();
 charger();

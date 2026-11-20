@@ -59,7 +59,7 @@ const lireJson = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); }
 const commun = lireJson(P("ra.config.json")), propre = lireJson(path.join(OCC, SITE, "ra.config.json"));
 const cfg = { ...commun, ...propre, reglagesParDefaut: { ...commun.reglagesParDefaut, ...propre.reglagesParDefaut }, suivi: { ...commun.suivi, ...propre.suivi } };
 if (!Array.isArray(cfg.paires)) fail(`occurrences/${SITE}/ra.config.json : la liste « paires » est absente.`);
-const ecrireHtml = (src, dest) => { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, fs.readFileSync(path.join(SRC, src), "utf8").replaceAll("{{TITRE}}", (cfg.titre || SITE).replace(/&/g, "&amp;"))); };
+const ecrireHtml = (src, dest) => { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, fs.readFileSync(path.join(SRC, src), "utf8").replaceAll("{{V}}", sha([fs.readFileSync(path.join(SRC, "app.js"), "utf8"), fs.readFileSync(path.join(SRC, "style.css"), "utf8")]).slice(0, 8)).replaceAll("{{TITRE}}", (cfg.titre || SITE).replace(/&/g, "&amp;"))); };
 if (!cfg.paires.length) {   // occurrence encore vide : page « bientôt disponible »
   fs.rmSync(OUT, { recursive: true, force: true });
   ecrireHtml("bientot.html", path.join(OUT, "index.html")); ecrireHtml("racine.html", path.join(DOCS, "index.html")); fs.writeFileSync(path.join(DOCS, ".nojekyll"), "");

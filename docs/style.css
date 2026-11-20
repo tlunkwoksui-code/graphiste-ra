@@ -19,6 +19,7 @@ p { margin:0 0 28px; font-size:18px; line-height:1.45; color:#c8cfdb; }
 button { font:inherit; color:var(--texte); border:0; cursor:pointer; }
 .grand { width:100%; padding:18px 20px; border-radius:16px; background:var(--acc); color:#1a1205; font-weight:800; font-size:20px; box-shadow:0 10px 30px rgba(255,184,77,.25); }
 .grand:disabled { opacity:.6; }
+.secondaire { width:100%; margin-top:12px; padding:14px 20px; border-radius:16px; background:rgba(255,255,255,.1); font-weight:600; font-size:18px; }
 
 #scan { position:fixed; top:calc(max(16px, env(safe-area-inset-top)) + 52px); left:50%; transform:translateX(-50%); z-index:10; display:flex; align-items:center; gap:10px;
         background:var(--verre); padding:10px 18px; border-radius:999px; font-size:15px; backdrop-filter:blur(6px); }
