@@ -17,10 +17,10 @@
   "consigne": "Visez une affiche",
   "paires": [
     {
-      "id": "affiche-01",
+      "id": "fumerTue",
       "titre": "Fumer tue",
-      "video": "videos/affiche-01.mp4",
-      "vignette": "img/affiche-01.jpg",
+      "video": "videos/fumerTue.mp4",
+      "vignette": "img/fumerTue.jpg",
       "ratioImage": 1.6,
       "ratioVideo": 1.6,
       "boucle": false,
@@ -28,12 +28,67 @@
       "calage": "ajuster"
     },
     {
-      "id": "affiche-02",
+      "id": "salonMaison",
       "titre": "Salon de la maison",
-      "video": "videos/affiche-02.mp4",
-      "vignette": "img/affiche-02.jpg",
+      "video": "videos/salonMaison.mp4",
+      "vignette": "img/salonMaison.jpg",
       "ratioImage": 1.6,
       "ratioVideo": 1.7778,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
+    },
+    {
+      "id": "avocea",
+      "titre": "Avocéa",
+      "video": "videos/avocea.mp4",
+      "vignette": "img/avocea.jpg",
+      "ratioImage": 0.5556,
+      "ratioVideo": 0.5556,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
+    },
+    {
+      "id": "bricotop",
+      "titre": "Bricotop",
+      "video": "videos/bricotop.mp4",
+      "vignette": "img/bricotop.jpg",
+      "ratioImage": 0.5625,
+      "ratioVideo": 0.5625,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
+    },
+    {
+      "id": "lavali09",
+      "titre": "Lavali 09",
+      "video": "videos/lavali09.mp4",
+      "vignette": "img/lavali09.jpg",
+      "ratioImage": 0.5625,
+      "ratioVideo": 0.5625,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
+    },
+    {
+      "id": "lavali99",
+      "titre": "Lavali 99",
+      "video": "videos/lavali99.mp4",
+      "vignette": "img/lavali99.jpg",
+      "ratioImage": 0.5625,
+      "ratioVideo": 0.5625,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
+    },
+    {
+      "id": "rechPE",
+      "titre": "Recherche PE",
+      "video": "videos/rechPE.mp4",
+      "vignette": "img/rechPE.jpg",
+      "ratioImage": 1.7667,
+      "ratioVideo": 1.7667,
       "boucle": false,
       "quandAffichePerdue": "pause",
       "calage": "ajuster"

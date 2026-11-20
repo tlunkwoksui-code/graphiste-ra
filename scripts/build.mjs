@@ -48,7 +48,7 @@ if (!Array.isArray(cfg.paires) || !cfg.paires.length) fail("ra.config.json : la 
 const defauts = { boucle: false, quandAffichePerdue: "continuer", calage: "ajuster", zonesIgnorees: [], ...(cfg.reglagesParDefaut || {}) };
 const ids = new Set();
 for (const p of cfg.paires) {
-  if (!/^[a-z0-9-]+$/.test(p.id || "")) fail(`id invalide « ${p.id} » : minuscules, chiffres et tirets seulement.`);
+  if (!/^[A-Za-z0-9_-]+$/.test(p.id || "")) fail(`id invalide « ${p.id} » : lettres sans accent, chiffres, tirets seulement (c'est le nom du fichier vidéo publié).`);
   if (ids.has(p.id)) fail(`id en double : ${p.id}`);
   ids.add(p.id);
   for (const k of ["image", "video"]) {
@@ -74,12 +74,12 @@ fs.mkdirSync(P("docs", "videos"), { recursive: true });
 fs.mkdirSync(P("docs", "img"), { recursive: true });
 for (const it of items) {
   const src = path.join(CONTENUS, it.p.video), out = path.join(DOCS, "videos", it.p.id + ".mp4"), stamp = path.join(CACHE, it.p.id + ".video.sig");
-  const sig = sha([fileSig(src), JSON.stringify(VIDEO), "v1"]);
+  const sig = sha([fileSig(src), JSON.stringify(VIDEO), "v2-cote-max"]);
   if (fs.existsSync(out) && fs.existsSync(stamp) && fs.readFileSync(stamp, "utf8") === sig) { it.videoCache = true; }
   else {
-    log(`  ⚙ optimisation de ${it.p.video} (1280 px, CRF ${VIDEO.crf})… patience`);
+    log(`  ⚙ optimisation de ${it.p.video} (plus grand côté 1280 px max, CRF ${VIDEO.crf})… patience`);
     const args = ["-y", "-loglevel", "error", "-i", src,
-      "-vf", `scale='min(${VIDEO.largeurMax},iw)':-2`,
+      "-vf", `scale='if(gt(iw,ih),min(${VIDEO.largeurMax},iw),-2)':'if(gt(iw,ih),-2,min(${VIDEO.largeurMax},ih))'`,
       "-c:v", "libx264", "-preset", "slow", "-crf", String(VIDEO.crf), "-profile:v", "high", "-level", "4.0", "-pix_fmt", "yuv420p",
       "-c:a", "aac", "-b:a", VIDEO.audio, "-ac", "2", "-movflags", "+faststart", out];
     execFileSync(FFMPEG, args, { stdio: "inherit" });
