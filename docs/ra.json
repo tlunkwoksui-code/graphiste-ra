@@ -24,7 +24,7 @@
       "ratioImage": 1.6,
       "ratioVideo": 1.6,
       "boucle": false,
-      "quandAffichePerdue": "continuer",
+      "quandAffichePerdue": "pause",
       "calage": "ajuster"
     },
     {
@@ -35,7 +35,7 @@
       "ratioImage": 1.6,
       "ratioVideo": 1.7778,
       "boucle": false,
-      "quandAffichePerdue": "continuer",
+      "quandAffichePerdue": "pause",
       "calage": "ajuster"
     }
   ]

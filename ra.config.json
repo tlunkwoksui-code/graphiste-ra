@@ -3,7 +3,7 @@
   "consigne": "Visez une affiche",
   "reglagesParDefaut": {
     "boucle": false,
-    "quandAffichePerdue": "continuer",
+    "quandAffichePerdue": "pause",
     "calage": "ajuster",
     "zonesIgnorees": [
       [

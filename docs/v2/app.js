@@ -36,6 +36,7 @@ function messageCamera(e) {
 async function charger() {
   try {
     cfg = await (await fetch("ra.json", { cache: "no-cache" })).json();
+    cfg.paires.forEach((p) => { p.quandAffichePerdue = "continuer"; });   // comportement figé de cette version
     SUIVI = { filterMinCF: 0.004, filterBeta: 1500, missTolerance: 20, warmupTolerance: 3, lissage: true, tauMin: 0.03, tauMax: 0.16, distRef: 0.12, angleRef: 0.15 };   // v2 figée : ne lit plus la config (réglages en dur)
     for (const k of Object.keys(SUIVI)) if (q.has(k)) SUIVI[k] = q.get(k) === "false" ? false : q.get(k) === "true" ? true : parseFloat(q.get(k));
     document.title = cfg.titre; $("#titre").textContent = cfg.titre; $("#consigne").textContent = cfg.consigne;

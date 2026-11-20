@@ -15,6 +15,9 @@ let SUIVI = {};          // réglages de suivi (ra.config.json « suivi », modi
 let cible = null;        // groupe MindAR de l'affiche courante (pose brute du suivi)
 let premier = true;      // true = recaler la vidéo d'un coup (début de suivi), sans la faire glisser
 let dernier = 0;
+let perteTimer = null;   // la pause à la perte de l'affiche n'a lieu qu'après une courte confirmation (évite les micro-coupures)
+let pleinParVideo = false;
+let enMarche = false;
 const lissee = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
 const brute = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
 const debugOn = q.has("debug"); const dbg = { frames: 0, maj: 0, t0: performance.now(), derniere: "", log: [] };
@@ -144,7 +147,17 @@ if (debugOn) {
 }
 
 // ---------- démarrage ----------
+function enVideoSeule() { return video.classList.contains("plein"); }
+function pleinEcranNavigateur() {   // équivalent de F11 : doit être appelé dans un geste de l'utilisateur
+  const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (f && !document.fullscreenElement && !document.webkitFullscreenElement) { try { const r = f.call(el, { navigationUI: "hide" }); if (r && r.catch) r.catch(() => {}); } catch { /* refusé : tant pis */ } }
+}
+function majBoutonsEcran() {
+  const plein = !!(document.fullscreenElement || document.webkitFullscreenElement), peut = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  $("#fsnav").hidden = !(enMarche && peut && !plein && !enVideoSeule());
+}
 async function demarrer() {
+  pleinEcranNavigateur();
   $("#demarrer").disabled = true; $("#etat").textContent = "Démarrage de la caméra…";
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error(window.isSecureContext ? "NotFound" : "insecure");
@@ -167,15 +180,19 @@ async function demarrer() {
     cfg.paires.forEach((p, i) => {
       const a = mindar.addAnchor(i); anchors.push(a);
       a.onTargetFound = () => {
-        if (i === cur) { suivie = true; if (p.quandAffichePerdue === "pause") lire(); }
+        clearTimeout(perteTimer);
+        if (i === cur) { suivie = true; if (p.quandAffichePerdue === "pause" && !video.ended && !enVideoSeule()) lire(); }   // reprise là où la vidéo s'était arrêtée
         else { suivie = true; allerA(i); }
         $("#scan").hidden = true;
       };
       a.onTargetLost = () => {
         if (i !== cur) return;
         suivie = false;
-        if (p.quandAffichePerdue === "pause") video.pause();
-        $("#scan").hidden = false;
+        if (p.quandAffichePerdue === "pause" && !enVideoSeule()) {
+          clearTimeout(perteTimer);
+          perteTimer = setTimeout(() => { if (!suivie) video.pause(); }, 350);
+        }
+        if (!enVideoSeule()) { $("#scanTexte").textContent = p.quandAffichePerdue === "pause" ? "Affiche perdue — la vidéo reprendra" : "Recherche de l'affiche…"; $("#scan").hidden = false; }
       };
     });
     await mindar.start();
@@ -184,11 +201,26 @@ async function demarrer() {
       const maintenant = performance.now(), dt = Math.min((maintenant - dernier) / 1000, 0.1); dernier = maintenant;
       lisser(dt); renderer.render(scene, camera); dbg.frames++;
     });
-    $("#accueil").hidden = true; $("#scan").hidden = false;
+    enMarche = true; $("#scanTexte").textContent = "Recherche d'une affiche…";
+    $("#accueil").hidden = true; $("#scan").hidden = false; $("#quitter").hidden = false; majBoutonsEcran();
   } catch (e) {
     console.error(e);
     afficherErreur(messageCamera(e));
   }
+}
+
+// ---------- quitter : arrête la caméra, la vidéo, le plein écran, et revient à l'accueil ----------
+function quitter() {
+  clearTimeout(perteTimer);
+  try { video.pause(); video.removeAttribute("src"); video.load(); } catch { /* rien */ }
+  try { mindar.renderer.setAnimationLoop(null); mindar.stop(); mindar.renderer.dispose(); } catch { /* déjà arrêté */ }
+  $("#ar").innerHTML = ""; if (texture) texture.dispose();
+  anchors = []; cur = -1; cible = null; suivie = false; premier = true; etat.ok = false; enMarche = false; pleinParVideo = false;
+  video.classList.remove("plein");
+  for (const s of ["#barre", "#chip", "#scan", "#retour", "#quitter", "#son", "#fsnav"]) $(s).hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  $("#accueil").hidden = false; $("#demarrer").disabled = false;
+  $("#etat").textContent = "Caméra arrêtée. Vous pouvez fermer cet onglet ou redémarrer.";
 }
 
 // ---------- contrôles ----------
@@ -205,14 +237,18 @@ $("#son").onclick = () => { video.muted = false; $("#son").hidden = true; majBar
 $("#rejouer").onclick = () => { video.currentTime = 0; pauseUtilisateur = false; lire(); };
 $("#prog").oninput = (e) => { if (video.duration) video.currentTime = (e.target.value / 1000) * video.duration; };
 $("#plein").onclick = () => {
-  video.classList.add("plein"); $("#retour").hidden = false; $("#chip").hidden = true;
-  video.controls = false; lire();
-  if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+  video.classList.add("plein"); $("#retour").hidden = false; $("#quitter").hidden = true; $("#chip").hidden = true; $("#scan").hidden = true; $("#fsnav").hidden = true;
+  clearTimeout(perteTimer); video.controls = false; lire();
+  if (!document.fullscreenElement) { pleinParVideo = true; pleinEcranNavigateur(); }   // sinon on est déjà en plein écran : rien à faire
 };
 $("#retour").onclick = () => {
-  video.classList.remove("plein"); $("#retour").hidden = true; $("#chip").hidden = false;
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  video.classList.remove("plein"); $("#retour").hidden = true; $("#quitter").hidden = false; $("#chip").hidden = false; $("#scan").hidden = suivie;
+  if (pleinParVideo && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  pleinParVideo = false; majBoutonsEcran();
 };
+$("#quitter").onclick = quitter;
+$("#fsnav").onclick = () => { pleinEcranNavigateur(); };
+document.addEventListener("fullscreenchange", majBoutonsEcran); document.addEventListener("webkitfullscreenchange", majBoutonsEcran);
 $("#demarrer").onclick = demarrer;
 $("#reessayer").onclick = () => location.reload();
 charger();

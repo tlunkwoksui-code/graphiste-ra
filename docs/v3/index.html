@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <base href="../">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1116">
+  <title>Graphiste &amp; RA (v3)</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": {
+        "three": "./vendor/three.module.js",
+        "three/addons/": "./vendor/addons/",
+        "mindar-image-three": "./vendor/mindar-image-three.prod.js"
+    } }
+  </script>
+</head>
+<body>
+  <div id="ar"></div>
+
+  <!-- une seule balise vidéo réutilisée pour toutes les affiches (une seule joue à la fois) -->
+  <video id="v" playsinline webkit-playsinline preload="none"></video>
+
+  <section id="accueil">
+    <div class="carte">
+      <div class="logo" aria-hidden="true">◎</div>
+      <h1 id="titre">Graphiste &amp; RA</h1>
+      <p id="consigne">Visez une affiche</p>
+      <button id="demarrer" class="grand" type="button">Démarrer la caméra</button>
+      <p id="etat" class="petit">version v3</p>
+    </div>
+  </section>
+
+  <div id="scan" hidden><span class="pastille"></span><span>Recherche d'une affiche…</span></div>
+  <div id="chip" hidden></div>
+  <button id="son" type="button" hidden>🔊 Activer le son</button>
+
+  <div id="barre" hidden>
+    <button id="pp" type="button" aria-label="Lecture / pause">⏸</button>
+    <button id="mute" type="button" aria-label="Son">🔊</button>
+    <input id="prog" type="range" min="0" max="1000" value="0" aria-label="Progression">
+    <button id="rejouer" type="button" hidden>↻ Rejouer</button>
+    <button id="plein" type="button">Plein écran</button>
+  </div>
+  <button id="retour" type="button" hidden>◀ Retour RA</button>
+
+  <section id="erreur" hidden>
+    <div class="carte">
+      <h2>Oups…</h2>
+      <p id="erreurTexte"></p>
+      <button id="reessayer" class="grand" type="button">Réessayer</button>
+    </div>
+  </section>
+
+  <script type="module" src="v3/app.js"></script>
+</body>
+</html>

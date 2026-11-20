@@ -47,3 +47,6 @@ Pour essayer sans rien publier, ajouter à l'adresse, par exemple : `?tauMax=0.2
 - **v2** : lissage de la pose à chaque image — mieux. Reste accessible à `/v2/` (https://tlunkwoksui-code.github.io/graphiste-ra/v2/).
 - **v3** (adresse principale) : v2 + zone morte (l'affiche immobile ne tremble plus), prédiction du mouvement entre deux mises à jour du suivi, lissage ajusté (`tauMin` 0,06 ; `tauMax` 0,14 ; `prediction` 0,8 ; `zoneMorte` 0,003 ; `predMax` 0,09).
 Retour à v2 : ouvrir l'adresse `/v2/`, ou republier en remplaçant `src/app.js` par `versions/v2/app.js`.
+- **v3** validée par l'utilisateur le 20/11/2026, figée à `/v3/` (https://tlunkwoksui-code.github.io/graphiste-ra/v3/).
+- **v4** (adresse principale) : v3 + navigateur en plein écran au démarrage (équivalent de F11, Chrome Android), vidéo en pause quand l'affiche sort du champ puis reprise au même endroit quand on la revisse (`quandAffichePerdue: "pause"`), bouton « Quitter » (arrête caméra et vidéo, sort du plein écran, retourne à l'accueil), bouton « ⛶ Plein écran » si on est sorti du plein écran, boutons déplacés pour libérer l'écran.
+  Sur iPhone/Safari le plein écran du navigateur n'existe pas : ajouter la page à l'écran d'accueil (Partager > Sur l'écran d'accueil) pour l'ouvrir sans barres.
