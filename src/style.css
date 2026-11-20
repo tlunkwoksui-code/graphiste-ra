@@ -31,7 +31,6 @@ button { font:inherit; color:var(--texte); border:0; cursor:pointer; }
          background:var(--verre); padding:8px 10px; border-radius:18px; backdrop-filter:blur(8px); }
 #barre button { background:rgba(255,255,255,.1); border-radius:12px; padding:10px 12px; font-size:16px; min-width:44px; white-space:nowrap; }
 #prog { flex:1; min-width:60px; accent-color:var(--acc); }
-#retour { position:fixed; top:max(16px, env(safe-area-inset-top)); right:16px; z-index:30; background:var(--verre); padding:10px 16px; border-radius:12px; font-size:15px; }
 [hidden] { display:none !important; }
 #quitter, #fsnav { position:fixed; top:max(16px, env(safe-area-inset-top)); z-index:30; background:var(--verre); padding:10px 14px; border-radius:12px; font-size:15px; backdrop-filter:blur(6px); }
 #quitter { right:16px; }

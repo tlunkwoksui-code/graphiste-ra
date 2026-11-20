@@ -253,7 +253,7 @@ function quitter() {
   video.classList.remove("plein");
   for (const s of ["#barre", "#chip", "#scan", "#retour", "#quitter", "#son", "#fsnav"]) $(s).hidden = true;
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  $("#accueil").hidden = false; $("#demarrer").disabled = false;
+  $("#plein").hidden = false; $("#accueil").hidden = false; $("#demarrer").disabled = false;
   $("#etat").textContent = "Caméra arrêtée. Vous pouvez fermer cet onglet ou redémarrer.";
 }
 
@@ -271,12 +271,12 @@ $("#son").onclick = () => { video.muted = false; $("#son").hidden = true; majBar
 $("#rejouer").onclick = () => { video.currentTime = 0; pauseUtilisateur = false; lire(); };
 $("#prog").oninput = (e) => { if (video.duration) video.currentTime = (e.target.value / 1000) * video.duration; };
 $("#plein").onclick = () => {
-  video.classList.add("plein"); $("#retour").hidden = false; $("#quitter").hidden = true; $("#chip").hidden = true; $("#scan").hidden = true; $("#fsnav").hidden = true;
+  video.classList.add("plein"); $("#plein").hidden = true; $("#retour").hidden = false; $("#chip").hidden = true; $("#scan").hidden = true; $("#fsnav").hidden = true;
   clearTimeout(perteTimer); video.controls = false; lire();
   if (!document.fullscreenElement) { pleinParVideo = true; pleinEcranNavigateur(); }   // sinon on est déjà en plein écran : rien à faire
 };
 $("#retour").onclick = () => {
-  video.classList.remove("plein"); $("#retour").hidden = true; $("#quitter").hidden = false; $("#chip").hidden = false; $("#scan").hidden = suivie;
+  video.classList.remove("plein"); $("#retour").hidden = true; $("#plein").hidden = false; $("#chip").hidden = false; $("#scan").hidden = suivie;
   if (pleinParVideo && document.fullscreenElement) document.exitFullscreen().catch(() => {});
   pleinParVideo = false; majBoutonsEcran();
 };
