@@ -48,5 +48,5 @@ Créer `occurrences/<nom>/ra.config.json` (copier celui de `chaine-teddy-lavedet
 
 ## Historique du suivi
 
-v1 saccadé · v2 lissage · v3 zone morte + prédiction (validée) · v4 plein écran, pause hors champ, bouton Quitter · **v5 (actuelle)** médiane de 5 poses, zone morte et lissage renforcés (validée sur téléphone le 20/11/2026).
+v1 saccadé · v2 lissage · v3 zone morte + prédiction (validée) · v4 plein écran, pause hors champ, bouton Quitter · v5 médiane de 5 poses, zone morte et lissage renforcés (validée sur téléphone le 20/11/2026) · v6 démarrage caméra instantané (préchargement des cibles) · v7 bouton « Retour RA » à la place de « ⤢ Vidéo », « Quitter » toujours visible · **v8 (actuelle)** plus aucun plein écran du navigateur (ni bouton, ni message « pour quitter le plein écran… » de Chrome). Pour une plein écran sans message : « Ajouter à l'écran d'accueil » (le manifeste est en mode plein écran).
 Le site a été réorganisé en occurrences le 20/11/2026 (ancien dépôt `graphiste-ra` abandonné).
