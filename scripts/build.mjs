@@ -199,7 +199,7 @@ if (fs.existsSync(icone)) {
 } else log(`  ⚠ pas d'icône pour « ${SITE} » : lancez « npm run icones » (ou déposez occurrences/${SITE}/icone.png).`);
 fs.writeFileSync(path.join(OUT, "manifest.webmanifest"), JSON.stringify({
   id: "./", name: cfg.titre || SITE, short_name: cfg.nomCourt || cfg.titre || SITE, description: cfg.consigne || "", start_url: "./", scope: "./",
-  display: "standalone", background_color: "#0e1116", theme_color: "#0e1116", icons: icones,
+  display: "fullscreen", display_override: ["fullscreen", "standalone"], background_color: "#0e1116", theme_color: "#0e1116", icons: icones,
 }, null, 2));
 fs.writeFileSync(path.join(OUT, "sw.js"), `// service worker minimal : rend le site installable ; tout passe par le réseau (jamais de vieille version en cache)
 self.addEventListener("install", () => self.skipWaiting());

@@ -177,7 +177,14 @@ if (debugOn) {
 
 // ---------- démarrage ----------
 function enVideoSeule() { return video.classList.contains("plein"); }
+function pleinEcranNavigateur() {   // doit être appelé dans un geste de l'utilisateur (le clic sur « Démarrer »)
+  const dejaPlein = matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (dejaPlein || !f || document.fullscreenElement || document.webkitFullscreenElement) return;
+  try { const r = f.call(el, { navigationUI: "hide" }); if (r && r.catch) r.catch(() => {}); } catch { /* refusé : tant pis */ }
+}
 async function demarrer() {
+  pleinEcranNavigateur();
   $("#demarrer").disabled = true; $("#etat").textContent = "Démarrage de la caméra…";
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error(window.isSecureContext ? "NotFound" : "insecure");
@@ -243,6 +250,7 @@ function quitter() {
   anchors = []; cur = -1; cible = null; suivie = false; premier = true; etat.ok = false; enMarche = false
   video.classList.remove("plein");
   for (const s of ["#barre", "#chip", "#scan", "#retour", "#quitter", "#son"]) $(s).hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   $("#plein").hidden = false; $("#accueil").hidden = false; $("#demarrer").disabled = false;
   $("#etat").textContent = "Caméra arrêtée. Vous pouvez fermer cet onglet ou redémarrer.";
 }
@@ -278,12 +286,6 @@ $("#quitterAccueil").onclick = () => {
   }, 250);
 };
 $("#reessayer").onclick = () => location.reload();
-// ---------- application installable : bouton « Installer » (Android/Chrome) ou astuce (iPhone) ; plus de barre d'adresse une fois installée ----------
+// ---------- raccourci sur l'écran d'accueil : le site est une application web (manifeste en plein écran, sans barre d'adresse) ----------
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
-const dejaInstallee = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone;
-let invite = null;
-window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); invite = e; if (!dejaInstallee) $("#installer").hidden = false; });
-window.addEventListener("appinstalled", () => { invite = null; $("#installer").hidden = true; $("#etat").textContent = "Application installée : ouvrez-la depuis l'écran d'accueil."; });
-$("#installer").onclick = async () => { if (!invite) return; invite.prompt(); try { await invite.userChoice; } catch { /* rien */ } invite = null; $("#installer").hidden = true; };
-if (!dejaInstallee && /iPad|iPhone|iPod/.test(navigator.userAgent)) $("#astuceIos").hidden = false;
 charger();

@@ -27,6 +27,7 @@ const etat = () => page.evaluate(() => {
   return { plein: vis("#plein"), retour: vis("#retour"), quitter: vis("#quitter"), enPlein: document.querySelector("#v").classList.contains("plein") };
 });
 for (let i = 0; i < 60; i++) { await new Promise((r) => setTimeout(r, 500)); if (await page.evaluate(() => !document.querySelector("#barre").hidden)) break; }
+const fsOn = await page.evaluate(() => !!document.fullscreenElement); console.log(fsOn ? "✔ plein écran du navigateur demandé au clic sur Démarrer" : "✖ pas de plein écran après Démarrer");
 const a = await etat(); console.log("RA        :", JSON.stringify(a));
 await page.click("#plein"); await new Promise((r) => setTimeout(r, 600));
 const b = await etat(); console.log("plein     :", JSON.stringify(b));
