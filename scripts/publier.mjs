@@ -9,4 +9,4 @@ git("add", "-A");
 if (!git("status", "--porcelain").trim()) { console.log("Rien à publier : aucun changement depuis la dernière fois. Pensez à lancer « npm run build » d'abord."); process.exit(0); }
 git("commit", "-q", "-m", message);
 console.log(git("push", "origin", "main") || "✔ Envoyé.");
-console.log("✔ Publié. Le site se met à jour dans ~1 minute : https://tlunkwoksui-code.github.io/graphiste-ra/");
+console.log("✔ Publié. Le site se met à jour dans ~1 minute : https://tlunkwoksui-code.github.io/realite-augmentee/prod-afpar-gra/");

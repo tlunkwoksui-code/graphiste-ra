@@ -1,5 +1,5 @@
 {
-  "name": "graphiste-ra",
+  "name": "realite-augmentee",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,7 @@
     "build": "node scripts/build.mjs",
     "publier": "node scripts/publier.mjs",
     "test-photo": "node scripts/test-photo.mjs",
+    "test-croise": "node scripts/test-croise.mjs",
     "test-nav": "node scripts/test-navigateur.mjs"
   },
   "devDependencies": {

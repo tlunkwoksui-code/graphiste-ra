@@ -9,7 +9,19 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const P = (...a) => path.join(ROOT, ...a);
-const CONTENUS = P("contenus"), DOCS = P("docs"), CACHE = P(".cache"), SRC = P("src");
+// Usage : npm run build            -> toutes les occurrences (dossiers de occurrences/)
+//         npm run build -- <nom>   -> une seule occurrence
+const OCC = P("occurrences");
+const toutes = fs.existsSync(OCC) ? fs.readdirSync(OCC).filter((d) => fs.statSync(path.join(OCC, d)).isDirectory()) : [];
+const SITE = process.argv[2];
+if (!SITE) {
+  if (!toutes.length) { console.error("Aucune occurrence dans occurrences/"); process.exit(1); }
+  for (const s of toutes) execFileSync(process.execPath, [fileURLToPath(import.meta.url), s], { stdio: "inherit" });
+  process.exit(0);
+}
+if (!toutes.includes(SITE)) { console.error(`Occurrence inconnue « ${SITE} ». Existantes : ${toutes.join(", ")}`); process.exit(1); }
+if (!/^[a-z0-9-]+$/.test(SITE)) { console.error(`Nom d'occurrence invalide « ${SITE} » : minuscules, chiffres et tirets seulement (c'est une partie de l'adresse).`); process.exit(1); }
+const CONTENUS = P("contenus", SITE), DOCS = P("docs"), OUT = P("docs", SITE), CACHE = P(".cache", SITE), SRC = P("src");
 const VIDEO = { largeurMax: 1280, crf: 28, audio: "128k" };
 const MIN_POINTS = 300; // en dessous : avertissement (affiche pauvre en détails)
 
@@ -41,10 +53,19 @@ const sha = (parts) => crypto.createHash("sha1").update(parts.join("|")).digest(
 const fileSig = (f) => { const s = fs.statSync(f); return `${path.basename(f)}:${s.size}:${Math.round(s.mtimeMs)}`; };
 
 // ---------- 1. config + présence des fichiers ----------
-if (!fs.existsSync(P("ra.config.json"))) fail("ra.config.json est introuvable à la racine du projet.");
-let cfg;
-try { cfg = JSON.parse(fs.readFileSync(P("ra.config.json"), "utf8")); } catch (e) { fail("ra.config.json n'est pas un JSON valide : " + e.message); }
-if (!Array.isArray(cfg.paires) || !cfg.paires.length) fail("ra.config.json : la liste « paires » est vide.");
+// réglages communs (ra.config.json à la racine) + réglages propres à l'occurrence (occurrences/<nom>/ra.config.json)
+const lireJson = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) { fail(f + " est introuvable ou invalide : " + e.message); } };
+const commun = lireJson(P("ra.config.json")), propre = lireJson(path.join(OCC, SITE, "ra.config.json"));
+const cfg = { ...commun, ...propre, reglagesParDefaut: { ...commun.reglagesParDefaut, ...propre.reglagesParDefaut }, suivi: { ...commun.suivi, ...propre.suivi } };
+if (!Array.isArray(cfg.paires)) fail(`occurrences/${SITE}/ra.config.json : la liste « paires » est absente.`);
+const ecrireHtml = (src, dest) => { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, fs.readFileSync(path.join(SRC, src), "utf8").replaceAll("{{TITRE}}", (cfg.titre || SITE).replace(/&/g, "&amp;"))); };
+if (!cfg.paires.length) {   // occurrence encore vide : page « bientôt disponible »
+  fs.rmSync(OUT, { recursive: true, force: true });
+  ecrireHtml("bientot.html", path.join(OUT, "index.html")); ecrireHtml("racine.html", path.join(DOCS, "index.html")); fs.writeFileSync(path.join(DOCS, ".nojekyll"), "");
+  console.log(`
+▶ ${SITE} : aucune affiche pour l'instant → page « bientôt disponible » (docs/${SITE}/).
+`); process.exit(0);
+}
 const defauts = { boucle: false, quandAffichePerdue: "continuer", calage: "ajuster", zonesIgnorees: [], ...(cfg.reglagesParDefaut || {}) };
 const ids = new Set();
 for (const p of cfg.paires) {
@@ -52,13 +73,13 @@ for (const p of cfg.paires) {
   if (ids.has(p.id)) fail(`id en double : ${p.id}`);
   ids.add(p.id);
   for (const k of ["image", "video"]) {
-    if (!p[k] || !fs.existsSync(path.join(CONTENUS, p[k]))) fail(`fichier manquant pour « ${p.id} » : contenus/${p[k]}`);
+    if (!p[k] || !fs.existsSync(path.join(CONTENUS, p[k]))) fail(`fichier manquant pour « ${p.id} » : contenus/${SITE}/${p[k]}`);
   }
   const r = { ...defauts, ...p };
   if (!["continuer", "pause"].includes(r.quandAffichePerdue)) fail(`${p.id} : quandAffichePerdue doit être "continuer" ou "pause".`);
   if (!["ajuster", "remplir"].includes(r.calage)) fail(`${p.id} : calage doit être "ajuster" ou "remplir".`);
 }
-log(`\n▶ ${cfg.paires.length} affiche(s) dans ra.config.json — vérification…`);
+log(`\n▶ ${cfg.paires.length} affiche(s) pour « ${SITE} » — vérification…`);
 
 // ---------- 2. dimensions et ratios (le calage gère un écart de ratio ; on ne déforme jamais) ----------
 const items = cfg.paires.map((p) => {
@@ -70,10 +91,10 @@ const items = cfg.paires.map((p) => {
 
 // ---------- 3. vidéos optimisées pour mobile (avec cache) ----------
 fs.mkdirSync(CACHE, { recursive: true });
-fs.mkdirSync(P("docs", "videos"), { recursive: true });
-fs.mkdirSync(P("docs", "img"), { recursive: true });
+fs.mkdirSync(path.join(OUT, "videos"), { recursive: true });
+fs.mkdirSync(path.join(OUT, "img"), { recursive: true });
 for (const it of items) {
-  const src = path.join(CONTENUS, it.p.video), out = path.join(DOCS, "videos", it.p.id + ".mp4"), stamp = path.join(CACHE, it.p.id + ".video.sig");
+  const src = path.join(CONTENUS, it.p.video), out = path.join(OUT, "videos", it.p.id + ".mp4"), stamp = path.join(CACHE, it.p.id + ".video.sig");
   const sig = sha([fileSig(src), JSON.stringify(VIDEO), "v2-cote-max"]);
   if (fs.existsSync(out) && fs.existsSync(stamp) && fs.readFileSync(stamp, "utf8") === sig) { it.videoCache = true; }
   else {
@@ -87,13 +108,13 @@ for (const it of items) {
   }
   it.videoPoids = fs.statSync(out).size; it.videoOut = probe(out);
   // vignette JPG de l'affiche (affichage de secours / poster vidéo)
-  const jpg = path.join(DOCS, "img", it.p.id + ".jpg");
+  const jpg = path.join(OUT, "img", it.p.id + ".jpg");
   execFileSync(FFMPEG, ["-y", "-loglevel", "error", "-i", path.join(CONTENUS, it.p.image), "-vf", "scale=640:-2", "-q:v", "4", jpg]);
 }
 
 // ---------- 4. targets.mind (compilation hors ligne MindAR, sans le paquet « canvas ») ----------
 const mindSig = sha(items.map((it) => fileSig(path.join(CONTENUS, it.p.image)) + ":" + it.p.id + JSON.stringify(it.cfg.zonesIgnorees || [])).concat(["mindar-1.2.5", "v2"]));
-const mindOut = path.join(DOCS, "targets.mind"), mindStamp = path.join(CACHE, "targets.sig"), statsFile = path.join(CACHE, "targets.stats.json");
+const mindOut = path.join(OUT, "targets.mind"), mindStamp = path.join(CACHE, "targets.sig"), statsFile = path.join(CACHE, "targets.stats.json");
 let stats;
 if (fs.existsSync(mindOut) && fs.existsSync(mindStamp) && fs.readFileSync(mindStamp, "utf8") === mindSig && fs.existsSync(statsFile)) {
   stats = JSON.parse(fs.readFileSync(statsFile, "utf8")); log("  ✔ targets.mind inchangé (cache)");
@@ -129,7 +150,7 @@ if (fs.existsSync(mindOut) && fs.existsSync(mindStamp) && fs.readFileSync(mindSt
   const comp = new Compilateur();
   let last = -10;
   await comp.compileImageTargets(images, (p) => { if (p - last >= 10) { last = p; process.stdout.write(`    ${Math.round(p)} %\r`); } });
-  fs.mkdirSync(DOCS, { recursive: true });
+  fs.mkdirSync(OUT, { recursive: true });
   fs.writeFileSync(mindOut, Buffer.from(comp.exportData()));
   stats = comp.data.map((d) => {
     const kf = d.matchingData, gros = kf.reduce((a, b) => (b.width > a.width ? b : a), kf[0]);
@@ -148,7 +169,7 @@ const manifest = {
     boucle: !!it.cfg.boucle, quandAffichePerdue: it.cfg.quandAffichePerdue, calage: it.cfg.calage,
   })),
 };
-fs.writeFileSync(path.join(DOCS, "ra.json"), JSON.stringify(manifest, null, 2));
+fs.writeFileSync(path.join(OUT, "ra.json"), JSON.stringify(manifest, null, 2));
 // bibliothèques copiées localement (versions figées : three 0.160.0 + mind-ar 1.2.5) -> pas de dépendance à un CDN
 const VEND = path.join(DOCS, "vendor"); fs.mkdirSync(path.join(VEND, "addons", "renderers"), { recursive: true });
 fs.copyFileSync(P("node_modules", "three", "build", "three.module.js"), path.join(VEND, "three.module.js"));
@@ -160,8 +181,10 @@ while (aFaire.length) {
   const f = P("node_modules", "mind-ar", "dist", nom); fs.copyFileSync(f, path.join(VEND, nom));
   for (const m of fs.readFileSync(f, "utf8").matchAll(/"\.\/([A-Za-z0-9_.-]+\.js)"/g)) aFaire.push(m[1]);
 }
-if (fs.existsSync(SRC)) fs.cpSync(SRC, DOCS, { recursive: true });
-if (fs.existsSync(P("versions"))) fs.cpSync(P("versions"), DOCS, { recursive: true });   // versions figées : docs/v2/ ...
+// code commun (à la racine du site) + page propre à l'occurrence
+for (const f of ["app.js", "style.css"]) fs.copyFileSync(path.join(SRC, f), path.join(DOCS, f));
+ecrireHtml("occurrence.html", path.join(OUT, "index.html")); ecrireHtml("racine.html", path.join(DOCS, "index.html"));
+fs.writeFileSync(path.join(OUT, "manifest.webmanifest"), JSON.stringify({ name: cfg.titre || SITE, short_name: (cfg.titre || SITE).slice(0, 12), start_url: ".", display: "fullscreen", orientation: "portrait", background_color: "#0e1116", theme_color: "#0e1116" }, null, 2));
 fs.writeFileSync(path.join(DOCS, ".nojekyll"), "");
 
 // ---------- 6. rapport ----------

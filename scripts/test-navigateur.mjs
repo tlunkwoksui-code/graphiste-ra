@@ -13,9 +13,9 @@ const fake = path.resolve(process.argv[2]);
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".mp4": "video/mp4", ".jpg": "image/jpeg", ".mind": "application/octet-stream" };
 
 const server = http.createServer((req, res) => {
-  const f = path.join(DOCS, decodeURIComponent(req.url.split("?")[0]).replace(/^\//, "") || "index.html");
-  const ok = fs.existsSync(f) && fs.statSync(f).isFile(); if (!ok) console.log("  [404 → index]", req.url);
-  const file = ok ? f : path.join(DOCS, "index.html");
+  const f = path.join(DOCS, decodeURIComponent(req.url.split("?")[0]).replace(/^\//, "") || "index.html"); const f2 = fs.existsSync(f) && fs.statSync(f).isDirectory() ? path.join(f, "index.html") : f;
+  const ok = fs.existsSync(f2) && fs.statSync(f2).isFile(); if (!ok) console.log("  [404 → index]", req.url);
+  const file = ok ? f2 : path.join(DOCS, "index.html");
   const stat = fs.statSync(file), type = MIME[path.extname(file)] || "application/octet-stream", range = req.headers.range;
   if (range) { // les vidéos ont besoin des requêtes « Range »
     const [a, b] = range.replace("bytes=", "").split("-"); const s = parseInt(a, 10), e = b ? parseInt(b, 10) : stat.size - 1;
@@ -37,7 +37,7 @@ const [vw, vh] = (process.env.VUE || "412x800").split("x").map(Number);
 await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 1 });
 page.on("console", (m) => { if (m.type() === "error") console.log("  [console]", m.text().slice(0, 200)); });
 page.on("pageerror", (e) => console.log("  [erreur page]", String(e).slice(0, 300)));
-await page.goto(process.argv[3] || `http://localhost:${port}/`, { waitUntil: "networkidle0" });
+await page.goto(process.argv[3] || `http://localhost:${port}/prod-afpar-gra/`, { waitUntil: "networkidle0" });
 await page.screenshot({ path: path.join(OUT, "1-accueil.png") });
 await page.click("#demarrer");
 const t0 = Date.now(); let found = false;
