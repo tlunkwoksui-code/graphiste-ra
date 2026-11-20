@@ -1,0 +1,7 @@
+{
+  "titre": "Comm AFPAR",
+  "consigne": "Visez une affiche",
+  "paires": [
+    { "id": "novValeursAFPAR", "image": "novValeursAFPAR.png", "video": "novValeursAFPAR.mp4", "titre": "Nos Valeurs AFPAR" }
+  ]
+}

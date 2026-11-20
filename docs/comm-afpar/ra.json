@@ -1,0 +1,32 @@
+{
+  "titre": "Comm AFPAR",
+  "suivi": {
+    "filterMinCF": 0.004,
+    "filterBeta": 1500,
+    "missTolerance": 20,
+    "warmupTolerance": 3,
+    "lissage": true,
+    "tauMin": 0.08,
+    "tauMax": 0.3,
+    "distRef": 0.12,
+    "angleRef": 0.15,
+    "zoneMorte": 0.005,
+    "prediction": 0.5,
+    "predMax": 0.09,
+    "mediane": 5
+  },
+  "consigne": "Visez une affiche",
+  "paires": [
+    {
+      "id": "novValeursAFPAR",
+      "titre": "Nos Valeurs AFPAR",
+      "video": "videos/novValeursAFPAR.mp4",
+      "vignette": "img/novValeursAFPAR.jpg",
+      "ratioImage": 1.4186,
+      "ratioVideo": 1.4138,
+      "boucle": false,
+      "quandAffichePerdue": "pause",
+      "calage": "ajuster"
+    }
+  ]
+}
