@@ -39,7 +39,7 @@ function messageCamera(e) {
 async function charger() {
   try {
     cfg = await (await fetch("ra.json", { cache: "no-cache" })).json();
-    SUIVI = { filterMinCF: 0.004, filterBeta: 1500, missTolerance: 20, warmupTolerance: 3, lissage: true, tauMin: 0.06, tauMax: 0.14, distRef: 0.12, angleRef: 0.15, zoneMorte: 0.003, prediction: 0.8, predMax: 0.09, ...(cfg.suivi || {}) };
+    SUIVI = { filterMinCF: 0.004, filterBeta: 1500, missTolerance: 20, warmupTolerance: 3, lissage: true, tauMin: 0.08, tauMax: 0.30, distRef: 0.12, angleRef: 0.15, zoneMorte: 0.005, prediction: 0.5, predMax: 0.09, mediane: 5, ...(cfg.suivi || {}) };
     for (const k of Object.keys(SUIVI)) if (q.has(k)) SUIVI[k] = q.get(k) === "false" ? false : q.get(k) === "true" ? true : parseFloat(q.get(k));
     document.title = cfg.titre; $("#titre").textContent = cfg.titre; $("#consigne").textContent = cfg.consigne;
   } catch { $("#etat").textContent = "Configuration introuvable."; $("#demarrer").disabled = true; }
@@ -95,31 +95,43 @@ function majBarre() {
 //  1. zone morte : une micro-variation de la pose (tremblement du suivi) est ignorée -> affiche immobile = vidéo immobile ;
 //  2. prédiction : entre deux mises à jour, on prolonge le mouvement à la vitesse mesurée (plafonnée) -> plus de « marches d'escalier » ni de retard ;
 //  3. lissage exponentiel adaptatif (fort au repos, léger en mouvement) pour gommer le reste.
+const hist = [];   // dernières poses brutes distinctes (pour la médiane)
+const _mp = new THREE.Vector3(), _mq = new THREE.Quaternion();
+const med = (a) => { const b = a.slice().sort((x, y) => x - y); return b[(b.length - 1) >> 1]; };
+function medianePose(pos, quat) {
+  const N = Math.max(1, Math.round(SUIVI.mediane || 1));
+  hist.push({ p: pos.clone(), q: quat.clone() }); while (hist.length > N) hist.shift();
+  if (hist.length < 3) { _mp.copy(pos); _mq.copy(quat); return; }
+  _mp.set(med(hist.map((h) => h.p.x)), med(hist.map((h) => h.p.y)), med(hist.map((h) => h.p.z)));
+  const ref = hist[hist.length - 1].q, qs = hist.map((h) => (h.q.dot(ref) < 0 ? { x: -h.q.x, y: -h.q.y, z: -h.q.z, w: -h.q.w } : h.q));
+  _mq.set(med(qs.map((h) => h.x)), med(qs.map((h) => h.y)), med(qs.map((h) => h.z)), med(qs.map((h) => h.w))).normalize();
+}
 const etat = { ok: false, pos: new THREE.Vector3(), quat: new THREE.Quaternion(), t: 0, vel: new THREE.Vector3(), omega: new THREE.Vector3() };
 const _dq = new THREE.Quaternion(), _axe = new THREE.Vector3(), _pred = new THREE.Vector3(), _qp = new THREE.Quaternion();
 function lisser(dt) {
-  if (!cible || !cible.visible) { if (root) root.visible = false; premier = true; etat.ok = false; return; }
+  if (!cible || !cible.visible) { if (root) root.visible = false; premier = true; etat.ok = false; hist.length = 0; return; }
   const now = performance.now() / 1000;
   cible.matrix.decompose(brute.p, brute.q, brute.s);
   const w = brute.s.x || 1;
   const cle = cible.matrix.elements[12].toFixed(5) + cible.matrix.elements[13].toFixed(5) + cible.matrix.elements[14].toFixed(5) + cible.matrix.elements[0].toFixed(5);
   if (cle !== dbg.derniere) {
     dbg.derniere = cle; dbg.maj++;
-    if (!etat.ok) { etat.pos.copy(brute.p); etat.quat.copy(brute.q); etat.t = now; etat.vel.set(0, 0, 0); etat.omega.set(0, 0, 0); etat.ok = true; }
+    medianePose(brute.p, brute.q);
+    if (!etat.ok) { etat.pos.copy(_mp); etat.quat.copy(_mq); etat.t = now; etat.vel.set(0, 0, 0); etat.omega.set(0, 0, 0); etat.ok = true; }
     else {
       const du = Math.max(now - etat.t, 1e-3);
-      const dp = brute.p.distanceTo(etat.pos) / w, da = brute.q.angleTo(etat.quat);
+      const dp = _mp.distanceTo(etat.pos) / w, da = _mq.angleTo(etat.quat);
       if (SUIVI.zoneMorte && dp < SUIVI.zoneMorte && da < SUIVI.zoneMorte * 4) {
         etat.vel.multiplyScalar(0.5); etat.omega.multiplyScalar(0.5);            // 1. micro-variation : on garde la pose précédente
         etat.t = now;
       } else {
-        const vNouv = brute.p.clone().sub(etat.pos).divideScalar(du);
-        _dq.copy(brute.q).multiply(etat.quat.clone().invert()); if (_dq.w < 0) { _dq.x *= -1; _dq.y *= -1; _dq.z *= -1; _dq.w *= -1; }
+        const vNouv = _mp.clone().sub(etat.pos).divideScalar(du);
+        _dq.copy(_mq).multiply(etat.quat.clone().invert()); if (_dq.w < 0) { _dq.x *= -1; _dq.y *= -1; _dq.z *= -1; _dq.w *= -1; }
         const ang = 2 * Math.acos(Math.min(1, _dq.w)), sn = Math.sqrt(Math.max(1 - _dq.w * _dq.w, 0));
         _axe.set(sn > 1e-4 ? _dq.x / sn : 0, sn > 1e-4 ? _dq.y / sn : 0, sn > 1e-4 ? _dq.z / sn : 0);
         const oNouv = _axe.multiplyScalar(ang / du);
         etat.vel.lerp(vNouv, 0.6); etat.omega.lerp(oNouv, 0.6);
-        etat.pos.copy(brute.p); etat.quat.copy(brute.q); etat.t = now;
+        etat.pos.copy(_mp); etat.quat.copy(_mq); etat.t = now;
       }
     }
   }

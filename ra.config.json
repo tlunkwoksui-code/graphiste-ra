@@ -133,12 +133,13 @@
     "missTolerance": 20,
     "warmupTolerance": 3,
     "lissage": true,
-    "tauMin": 0.06,
-    "tauMax": 0.14,
+    "tauMin": 0.08,
+    "tauMax": 0.3,
     "distRef": 0.12,
     "angleRef": 0.15,
-    "zoneMorte": 0.003,
-    "prediction": 0.8,
-    "predMax": 0.09
+    "zoneMorte": 0.005,
+    "prediction": 0.5,
+    "predMax": 0.09,
+    "mediane": 5
   }
 }

@@ -22,5 +22,5 @@ async function essai(nom, qs, pageUrl = "") {
   const dur = log.length ? (log.at(-1)[0] - log[0][0]) / 1000 : 0;
   console.log(`${nom.padEnd(22)} images:${log.length} (${(log.length / dur).toFixed(0)} i/s)  secousse pose brute: ${stats(1).toExponential(2)}  pose affichée: ${stats(4).toExponential(2)}  écart/brut: ${ecart.toExponential(1)}`);
 }
-for (const v of (process.env.VERS || "v2,v3").split(",")) await essai(v + " " + (process.env.QS || ""), v === "v2" ? "" : (process.env.QS || ""), v === "v2" ? "v2/index.html" : "");
+for (const v of (process.env.VERS || "v2,v3").split(",")) await essai(v + " " + (process.env.QS || ""), v === "v5" ? (process.env.QS || "") : "", v === "v5" ? "" : v + "/index.html");
 server.close();

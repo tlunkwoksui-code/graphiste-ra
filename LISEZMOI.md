@@ -57,3 +57,7 @@ Retour à v2 : ouvrir l'adresse `/v2/`, ou republier en remplaçant `src/app.js`
 - Les vidéos sont réduites pour le mobile : plus grand côté 1280 px maximum (un portrait 1080×1920 devient 720×1280), CRF 28.
 - `zonesIgnorees` n'est plus global : il est réservé aux affiches `fumerTue` et `salonMaison` (même bandeau AFPAR). Les autres affiches sont reconnues avec toute leur image.
 - `npm run test-croise` : montre chaque affiche à la reconnaissance et indique quelles cibles la reconnaissent (idéal : une seule, la bonne).
+
+## Historique, suite
+- **v4** figée à `/v4/` : plein écran, pause hors champ, bouton Quitter.
+- **v5** (adresse principale, 20/11/2026) : stabilisation renforcée du positionnement. Médiane des 5 dernières positions (écarte les « changements d'avis » ponctuels du suivi), zone morte plus large, lissage plus fort, prédiction réduite (la prédiction amplifiait le bruit). Réglages `suivi` : `mediane` 5, `zoneMorte` 0,005, `tauMin` 0,08, `tauMax` 0,30, `prediction` 0,5. Mesure en simulation (caméra bruitée) : tremblements au repos divisés par ~5, secousses en mouvement divisées par ~2 ; en contrepartie un léger retard de suivi lors des mouvements rapides.
