@@ -36,6 +36,23 @@ function messageCamera(e) {
   return "Impossible de démarrer la caméra (" + (n || "erreur inconnue") + ").";
 }
 
+// ---------- préchargement des cibles (dès l'ouverture de la page, pendant que l'utilisateur lit l'accueil) ----------
+// targets.mind.gz (2x plus léger) est téléchargé puis décompressé ; MindAR le relit ensuite depuis la mémoire (adresse blob:) : plus aucune attente au clic.
+const ciblesPretes = (async () => {
+  try {
+    if ("DecompressionStream" in window) {
+      const r = await fetch("targets.mind.gz");
+      if (r.ok) return URL.createObjectURL(new Blob([await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()]));
+    }
+    const r = await fetch("targets.mind");
+    if (r.ok) return URL.createObjectURL(await r.blob());
+  } catch { /* on laissera MindAR télécharger lui-même */ }
+  return "targets.mind";
+})();
+// MindAR demande « ra:cibles » : on lui sert le fichier préchargé (ou on attend qu'il arrive) sans bloquer l'ouverture de la caméra
+const fetchNatif = window.fetch.bind(window);
+window.fetch = (u, ...a) => (u === "ra:cibles" ? ciblesPretes.then((url) => fetchNatif(url)) : fetchNatif(u, ...a));
+
 async function charger() {
   try {
     cfg = await (await fetch("ra.json", { cache: "no-cache" })).json();
@@ -176,7 +193,7 @@ async function demarrer() {
     // geste utilisateur : on prépare la vidéo (son autorisé pour la suite)
     video.muted = false; video.volume = 1;
     mindar = new MindARThree({
-      container: $("#ar"), imageTargetSrc: "targets.mind", maxTrack: 1,
+      container: $("#ar"), imageTargetSrc: "ra:cibles", maxTrack: 1,
       uiLoading: "no", uiScanning: "no", uiError: "no",
       filterMinCF: SUIVI.filterMinCF, filterBeta: SUIVI.filterBeta,
       warmupTolerance: SUIVI.warmupTolerance, missTolerance: SUIVI.missTolerance,
@@ -207,7 +224,12 @@ async function demarrer() {
         if (!enVideoSeule()) { $("#scanTexte").textContent = p.quandAffichePerdue === "pause" ? "Affiche perdue — la vidéo reprendra" : "Recherche de l'affiche…"; $("#scan").hidden = false; }
       };
     });
-    await mindar.start();
+    // la caméra s'affiche dès qu'elle est prête ; MindAR finit de s'initialiser derrière (la reconnaissance démarre juste après)
+    let cameraVisible = false;
+    const montrerCamera = () => { if (cameraVisible) return; cameraVisible = true; $("#accueil").hidden = true; $("#scanTexte").textContent = "Préparation…"; $("#scan").hidden = false; };
+    const guet = setInterval(() => { const v = mindar.video; if (v && v.readyState >= 2 && v.videoWidth) { clearInterval(guet); montrerCamera(); } }, 30);
+    try { await mindar.start(); } finally { clearInterval(guet); }
+    montrerCamera();
     dernier = performance.now();
     renderer.setAnimationLoop(() => {
       const maintenant = performance.now(), dt = Math.min((maintenant - dernier) / 1000, 0.1); dernier = maintenant;

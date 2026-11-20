@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import zlib from "node:zlib";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -160,6 +161,9 @@ if (fs.existsSync(mindOut) && fs.existsSync(mindStamp) && fs.readFileSync(mindSt
   log("  ✔ targets.mind compilé          ");
 }
 
+// version compressée (gzip) : 2x plus légère à télécharger ; la page la décompresse elle-même (DecompressionStream)
+fs.writeFileSync(mindOut + ".gz", zlib.gzipSync(fs.readFileSync(mindOut), { level: 9 }));
+
 // ---------- 5. manifeste pour la page + copie du site ----------
 const manifest = {
   titre: cfg.titre || "Graphiste & RA", suivi: cfg.suivi || {}, consigne: cfg.consigne || "Visez une affiche",
@@ -201,6 +205,6 @@ items.forEach((it, i) => {
     if (s.points < MIN_POINTS) { avert++; log(`   ⚠ AVERTISSEMENT : peu de points (< ${MIN_POINTS}) → reconnaissance risquée (trop d'aplats ?).`); }
   }
 });
-log(`\nvidéos : ${mo(items.reduce((s, it) => s + it.videoPoids, 0))} au total — targets.mind : ${mo(fs.statSync(mindOut).size)}`);
+log(`\nvidéos : ${mo(items.reduce((s, it) => s + it.videoPoids, 0))} au total — targets.mind : ${mo(fs.statSync(mindOut).size)} (${mo(fs.statSync(mindOut + ".gz").size)} compressé)`);
 log(avert ? `\n⚠ ${avert} affiche(s) à surveiller (voir ci-dessus).` : "\n✔ Aucun avertissement.");
 log("docs/ régénéré.\n");
