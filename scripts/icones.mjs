@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."), OCC = path.join(ROOT, "occurrences");
-const COULEURS = { "prod-afpar-gra": "#ffb84d", "chaine-teddy-lavedet": "#4dd0ff", "comm-afpar": "#7dff9a", "anniv-mael": "#ff7de0" };
+const COULEURS = { "prod-afpar-gra": "#ffb84d", "chaine-teddy-lavedet": "#4dd0ff", "comm-afpar": "#7dff9a" };
 const chrome = ["C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"].find((p) => fs.existsSync(p));
 if (!chrome) { console.error("Chrome introuvable (nécessaire pour dessiner l'icône)."); process.exit(1); }
 const aFaire = fs.readdirSync(OCC).filter((d) => fs.statSync(path.join(OCC, d)).isDirectory() && !fs.existsSync(path.join(OCC, d, "icone.png")));
