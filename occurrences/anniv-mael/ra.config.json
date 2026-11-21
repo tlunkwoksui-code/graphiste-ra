@@ -1,0 +1,8 @@
+{
+  "titre": "Anniversaire Maël",
+  "consigne": "Visez une image",
+  "paires": [
+    { "id": "pasTrouve", "image": "pasTrouve.png", "video": "pasTrouve.mp4", "titre": "Pas trouvé" },
+    { "id": "trouve", "image": "trouve.png", "video": "trouve.mp4", "titre": "Trouvé" }
+  ]
+}

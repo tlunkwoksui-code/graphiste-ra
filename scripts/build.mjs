@@ -22,7 +22,10 @@ if (!SITE) {
 }
 if (!toutes.includes(SITE)) { console.error(`Occurrence inconnue « ${SITE} ». Existantes : ${toutes.join(", ")}`); process.exit(1); }
 if (!/^[a-z0-9-]+$/.test(SITE)) { console.error(`Nom d'occurrence invalide « ${SITE} » : minuscules, chiffres et tirets seulement (c'est une partie de l'adresse).`); process.exit(1); }
-const CONTENUS = P("contenus", SITE), DOCS = P("docs"), OUT = P("docs", SITE), CACHE = P(".cache", SITE), SRC = P("src");
+// dossier des contenus : « contenus/<nom> », ou à défaut un dossier de même nom sans tirets ni majuscules (ex. annivMael pour anniv-mael)
+const norm = (x) => x.toLowerCase().replace(/[-_ ]/g, "");
+const dossierContenus = fs.existsSync(P("contenus", SITE)) ? SITE : (fs.readdirSync(P("contenus")).find((d) => norm(d) === norm(SITE)) || SITE);
+const CONTENUS = P("contenus", dossierContenus), DOCS = P("docs"), OUT = P("docs", SITE), CACHE = P(".cache", SITE), SRC = P("src");
 const VIDEO = { largeurMax: 1280, crf: 28, audio: "128k" };
 const MIN_POINTS = 300; // en dessous : avertissement (affiche pauvre en détails)
 
